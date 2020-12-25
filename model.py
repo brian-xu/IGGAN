@@ -34,13 +34,13 @@ class Generator(nn.Module):
             nn.LeakyReLU()
         )
         self.layer5 = nn.Sequential(
-            nn.ConvTranspose3d(self.cube_len, 1, kernel_size=4, stride=2, bias=self.bias, padding=(1, 1, 1)),
+            nn.ConvTranspose3d(self.cube_len, 1, kernel_size=4, stride=2, bias=self.bias,
+                               padding=(1, 1, 1)),
             nn.Sigmoid()
         )
 
     def forward(self, x):
         out = x.view(-1, self.z_size, 1, 1, 1)
-
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
@@ -167,7 +167,6 @@ class RenderNet(nn.Module):
 
     def forward(self, x):
         out = x
-
         out = self.enc1(out)
         out = self.enc2(out)
         out = self.enc3(out)
@@ -265,37 +264,37 @@ class Discriminator(nn.Module):
         )
         self.layer2 = nn.Sequential(
             # state size. (ndf) x 128 x 128
-            nn.Conv2d(64, 64 * 2, 4, 2, 1, bias=self.bias),
+            SpectralNorm(nn.Conv2d(64, 64 * 2, 4, 2, 1, bias=self.bias)),
             nn.BatchNorm2d(64 * 2),
             nn.LeakyReLU(0.2, inplace=True)
         )
         self.layer3 = nn.Sequential(
             # state size. (ndf*2) x 64 x 64
-            nn.Conv2d(64 * 2, 64 * 4, 4, 2, 1, bias=self.bias),
+            SpectralNorm(nn.Conv2d(64 * 2, 64 * 4, 4, 2, 1, bias=self.bias)),
             nn.BatchNorm2d(64 * 4),
             nn.LeakyReLU(0.2, inplace=True)
         )
         self.layer4 = nn.Sequential(
             # state size. (ndf*4) x 32 x 32
-            nn.Conv2d(64 * 4, 64 * 8, 4, 2, 1, bias=self.bias),
+            SpectralNorm(nn.Conv2d(64 * 4, 64 * 8, 4, 2, 1, bias=self.bias)),
             nn.BatchNorm2d(64 * 8),
             nn.LeakyReLU(0.2, inplace=True)
         )
         self.layer5 = nn.Sequential(
             # state size. (ndf*8) x 16 x 16
-            nn.Conv2d(64 * 8, 64 * 16, 4, 2, 1, bias=self.bias),
+            SpectralNorm(nn.Conv2d(64 * 8, 64 * 16, 4, 2, 1, bias=self.bias)),
             nn.BatchNorm2d(64 * 16),
             nn.LeakyReLU(0.2, inplace=True)
         )
         self.layer6 = nn.Sequential(
             # state size. (ndf*16) x 8 x 8
-            nn.Conv2d(64 * 16, 64 * 32, 4, 2, 1, bias=self.bias),
+            SpectralNorm(nn.Conv2d(64 * 16, 64 * 32, 4, 2, 1, bias=self.bias)),
             nn.BatchNorm2d(64 * 32),
             nn.LeakyReLU(0.2, inplace=True)
         )
         self.layer7 = nn.Sequential(
             # state size. (ndf*32) x 4 x 4
-            nn.Conv2d(64 * 32, 1, 4, 1, 0, bias=self.bias),
+            SpectralNorm(nn.Conv2d(64 * 32, 1, 4, 1, 0, bias=self.bias)),
             nn.Sigmoid()
         )
 
