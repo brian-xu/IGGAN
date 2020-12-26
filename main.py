@@ -9,12 +9,14 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 
 # Set random seed for reproducibility
+import render
+
 manualSeed = 999
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataroot', type=str, default="data/500")
+parser.add_argument('--dataset', type=str, default="data/500")
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--num_epochs', type=int, default=5)
 parser.add_argument('--workers', type=int, default=2)
@@ -31,7 +33,7 @@ args = parser.parse_args()
 
 device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 
-dataset = dset.ImageFolder(root=args.dataroot,
+dataset = dset.ImageFolder(root=args.dataset,
                            transform=transforms.ToTensor())
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
@@ -50,11 +52,10 @@ def weights_init(m):
 generator = model.Generator(args).to(device)
 generator.apply(weights_init)
 
+discriminator = model.Discriminator(args).to(device)
+
 renderer = model.RenderNet(args).to(device)
 renderer.apply(weights_init)
-
-discriminator = model.Discriminator(args).to(device)
-discriminator.apply(weights_init)
 
 criterion = nn.BCELoss()
 
@@ -84,7 +85,7 @@ print("Starting Training Loop...")
 # For each epoch
 for epoch in range(args.num_epochs):
     # For each batch in the dataloader
-    for i, data in enumerate(dataloader, 0):
+    for i, data in enumerate(dataloader):
 
         ############################
         # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
@@ -147,7 +148,7 @@ for epoch in range(args.num_epochs):
         # Render the voxels with the neural renderer
         nr = renderer(fake_voxels)
         # Render the voxels with an off-the-shelf renderer
-        ots = None  # placeholder, figure out how to use pyrender
+        ots = render.render_canonical(fake_voxels)
         # Perform a forward pass of neural renderer output through D
         nr_output = discriminator(nr).view(-1)
         # Perform a forward pass of off-the-shelf renderer output through D
