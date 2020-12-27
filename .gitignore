@@ -73,4 +73,5 @@ cython_debug/
 *.iml
 out
 gen
-/testing/
+testing
+data
