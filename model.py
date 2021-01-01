@@ -13,25 +13,25 @@ class Generator(nn.Module):
             nn.ConvTranspose3d(self.z_size, self.cube_len * 8, kernel_size=4, stride=1, bias=self.bias,
                                padding=(0, 0, 0)),
             nn.BatchNorm3d(self.cube_len * 8),
-            nn.LeakyReLU()
+            nn.ReLU()
         )
         self.layer2 = nn.Sequential(
             nn.ConvTranspose3d(self.cube_len * 8, self.cube_len * 4, kernel_size=4, stride=2, bias=self.bias,
                                padding=(1, 1, 1)),
             nn.BatchNorm3d(self.cube_len * 4),
-            nn.LeakyReLU()
+            nn.ReLU()
         )
         self.layer3 = nn.Sequential(
             nn.ConvTranspose3d(self.cube_len * 4, self.cube_len * 2, kernel_size=4, stride=2, bias=self.bias,
                                padding=(1, 1, 1)),
             nn.BatchNorm3d(self.cube_len * 2),
-            nn.LeakyReLU()
+            nn.ReLU()
         )
         self.layer4 = nn.Sequential(
             nn.ConvTranspose3d(self.cube_len * 2, self.cube_len, kernel_size=4, stride=2, bias=self.bias,
                                padding=(1, 1, 1)),
             nn.BatchNorm3d(self.cube_len),
-            nn.LeakyReLU()
+            nn.ReLU()
         )
         self.layer5 = nn.Sequential(
             nn.ConvTranspose3d(self.cube_len, 1, kernel_size=4, stride=2, bias=self.bias,
@@ -64,7 +64,7 @@ class RenderNet(nn.Module):
             nn.Dropout3d(self.prob)
         )
         self.enc2 = nn.Sequential(
-            nn.Conv3d(8, 16, kernel_size=3, stride=(1, 1, 2), padding=1, bias=self.bias),
+            nn.Conv3d(8, 16, kernel_size=3, stride=(2, 1, 1), padding=1, bias=self.bias),
             nn.PReLU(),
             nn.Dropout3d(self.prob)
         )
@@ -103,25 +103,25 @@ class RenderNet(nn.Module):
 
         self.enc4 = nn.Sequential(
             nn.ConstantPad2d((1, 2, 1, 2), 0),
-            nn.Conv2d(32 * 16, 32 * 8, kernel_size=4, stride=1, padding=0, bias=self.bias),
+            nn.Conv2d(32 * 16, 32 * 16, kernel_size=4, stride=1, padding=0, bias=self.bias),
             nn.PReLU(),
             nn.Dropout2d(self.prob)
         )
 
         self.res2d3 = nn.Sequential(
-            nn.Conv2d(32 * 8, 32 * 8, kernel_size=3, stride=1, padding=1, bias=self.bias),
+            nn.Conv2d(32 * 16, 32 * 16, kernel_size=3, stride=1, padding=1, bias=self.bias),
             nn.PReLU(),
-            nn.Conv2d(32 * 8, 32 * 8, kernel_size=3, stride=1, padding=1, bias=self.bias),
+            nn.Conv2d(32 * 16, 32 * 16, kernel_size=3, stride=1, padding=1, bias=self.bias),
         )
         self.res2d4 = nn.Sequential(
-            nn.Conv2d(32 * 8, 32 * 8, kernel_size=3, stride=1, padding=1, bias=self.bias),
+            nn.Conv2d(32 * 16, 32 * 16, kernel_size=3, stride=1, padding=1, bias=self.bias),
             nn.PReLU(),
-            nn.Conv2d(32 * 8, 32 * 8, kernel_size=3, stride=1, padding=1, bias=self.bias),
+            nn.Conv2d(32 * 16, 32 * 16, kernel_size=3, stride=1, padding=1, bias=self.bias),
         )
 
         self.enc5 = nn.Sequential(
             nn.ConstantPad2d((1, 2, 1, 2), 0),
-            nn.Conv2d(32 * 8, 32 * 8, kernel_size=4, stride=1, padding=0, bias=self.bias),
+            nn.Conv2d(32 * 16, 32 * 8, kernel_size=4, stride=1, padding=0, bias=self.bias),
             nn.PReLU(),
             nn.Dropout2d(self.prob)
         )
@@ -174,6 +174,7 @@ class RenderNet(nn.Module):
         out = torch.add(self.res3d1(out), out)
         out = torch.add(self.res3d2(out), out)
 
+        # (input, channels, depth, width, height)
         out = out.view(-1, 32 * 16, 32, 32)
         out = self.proj(out)
         out = torch.add(self.res2d1(out), out)
