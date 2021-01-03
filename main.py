@@ -18,15 +18,15 @@ torch.manual_seed(manualSeed)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default="data/")
-parser.add_argument('--batch_size', type=int, default=5)
+parser.add_argument('--batch_size', type=int, default=1)
 parser.add_argument('--num_epochs', type=int, default=5)
-parser.add_argument('--workers', type=int, default=1)
+parser.add_argument('--workers', type=int, default=2)
 parser.add_argument('--nr_lr', type=float, default=2e-5)
 parser.add_argument('--gan_lr', type=float, default=2e-4)
 parser.add_argument('--beta1', type=float, default=0.5)
 parser.add_argument('--dom_lambda', type=float, default=100)
 parser.add_argument('--z_size', type=float, default=200)
-parser.add_argument('--bias', type=bool, default=False)
+parser.add_argument('--bias', type=bool, default=True)
 parser.add_argument('--dropout_rate', type=float, default=0.25)
 parser.add_argument('--is_grayscale', type=bool, default=True)
 
@@ -47,7 +47,7 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
                                          shuffle=True, num_workers=args.workers)
 
 
-def weights_init(m):
+def generator_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         nn.init.normal_(m.weight.data, 0.0, 0.02)
@@ -56,24 +56,42 @@ def weights_init(m):
         nn.init.constant_(m.bias.data, 0)
 
 
+def discriminator_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        nn.init.normal_(m.weight_bar.data, 0.0, 0.02)
+        nn.init.normal_(m.weight_u.data, 0.0, 0.02)
+        nn.init.normal_(m.weight_v.data, 0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.normal_(m.weight.data, 1.0, 0.02)
+        nn.init.constant_(m.bias.data, 0)
+
+
+def renderer_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        nn.init.xavier_normal_(m.weight.data)
+
+
 generator = model.Generator(args).to(device)
-generator.apply(weights_init)
+generator.apply(generator_init)
 
 discriminator = model.Discriminator(args).to(device)
+discriminator.apply(discriminator_init)
 
 renderer = model.RenderNet(args).to(device)
-renderer.apply(weights_init)
+renderer.apply(renderer_init)
 
 criterion = nn.BCELoss()
-
-l2 = nn.MSELoss()
 
 
 def DOMLoss(x, y):
     return torch.mean(torch.square(torch.log(x) - torch.log(y)))
 
 
-fixed_noise = torch.randn(64, args.z_size, 1, 1, device=device)
+l2 = nn.MSELoss(reduction='sum')
+
+# fixed_noise = torch.randn(64, args.z_size, 1, 1, device=device)
 
 real_label = 1.
 fake_label = 0.
@@ -82,17 +100,10 @@ optimizerG = optim.Adam(generator.parameters(), lr=args.gan_lr, betas=(args.beta
 optimizerD = optim.Adam(discriminator.parameters(), lr=args.gan_lr, betas=(args.beta1, 0.999))
 optimizerR = optim.Adam(renderer.parameters(), lr=args.nr_lr, betas=(args.beta1, 0.999))
 
-G_losses = []
-D_losses = []
-R_losses = []
 
-# fake_voxels = torch.zeros(1,1,64,64,64)
-#
-# for i in range(64):
-#     for j in range(64):
-#         for k in range(64):
-#             fake_voxels[0,0,i, j, k] = 1
-
+# G_losses = []
+# D_losses = []
+# R_losses = []
 
 
 def main():
@@ -117,7 +128,6 @@ def main():
             # Calculate gradients for D in backward pass
             errD_real.backward()
             D_x = output.mean().item()
-            del real_cpu
 
             # Train with all-fake batch
             # Generate batch of latent vectors
@@ -126,7 +136,6 @@ def main():
             fake_voxels = generator(noise)
             # Render fake voxel batch with R
             fake = renderer(fake_voxels)
-            del fake_voxels
             label.fill_(fake_label)
             # Classify all fake batch with D
             output = discriminator(fake.detach()).view(-1)
@@ -192,10 +201,10 @@ def main():
                       f"Loss_D: {errD.item():.4f}\tLoss_G: {errG.item():.4f}\tLoss_R: {errR.item():.4f}\t"
                       f"D(x):  {D_x:.4f}\tD(G(z)):  {D_G_z1:.4f}/ {D_G_z2:.4f}\tR(G(z):  {R_x:.4f}")
 
-            # Save Losses for plotting later
-            G_losses.append(errG.item())
-            D_losses.append(errD.item())
-            R_losses.append(errR.item())
+            # # Save Losses for plotting later
+            # G_losses.append(errG.item())
+            # D_losses.append(errD.item())
+            # R_losses.append(errR.item())
 
             # with torch.no_grad():
             #     fake = generator(fixed_noise).detach().cpu()

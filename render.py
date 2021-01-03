@@ -14,12 +14,12 @@ def mesh_colors():
 sm = trimesh.creation.box((1, 1, 1))
 sm.visual.face_colors = mesh_colors()
 
-camera = pyrender.OrthographicCamera(xmag=52, ymag=52, zfar=1000)
+camera = pyrender.OrthographicCamera(xmag=45, ymag=45, zfar=1000)
 camera_pose = np.array([
-    [-6.43043726e-01, 3.82967760e-01, -6.63165959e-01, -2.27456165e+01],
-    [2.54106097e-04, 8.65931585e-01, 4.99881402e-01, 7.32862870e+01],
-    [7.65963251e-01, 3.21222953e-01, -5.56908875e-01, -1.39929237e+01],
-    [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]
+    [-4.87500000e-01, -2.50000000e-01, +8.33333333e-01, +1.00000000e+02],
+    [-0.00000000e+00, +9.66666666e-01, +2.93333333e-01, +5.55872594e+01],
+    [-8.73333333e-01, +1.43333333e-01, -4.66666666e-01, -6.62382094e+00],
+    [+0.00000000e+00, +0.00000000e+00, +0.00000000e+00, +1.00000000e+00]
 ])
 scene = pyrender.Scene(bg_color=np.ones(4), ambient_light=np.ones(3))
 camera_node = scene.add(camera, pose=camera_pose)

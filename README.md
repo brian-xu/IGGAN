@@ -4,7 +4,11 @@ Unoffical code for the research paper [Inverse Graphics GAN](https://arxiv.org/p
 
 Under construction.
 
-# Credits
+## Notes
+
+CUDA training requires about 6G of VRAM.
+
+## Credits
 
 Generator architecture based on [3DGAN-PyTorch](https://github.com/rimchang/3DGAN-Pytorch).
 

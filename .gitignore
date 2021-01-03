@@ -73,5 +73,10 @@ cython_debug/
 *.iml
 out
 gen
+
+
+### Project specific
 testing
-data
+*.zip
+*.binvox
+*.exe
