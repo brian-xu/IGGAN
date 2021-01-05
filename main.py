@@ -6,7 +6,6 @@ import torch.optim as optim
 import torch.nn as nn
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
-import cv2
 import model
 
 # Set random seed for reproducibility
@@ -82,12 +81,12 @@ discriminator.apply(discriminator_init)
 renderer = model.RenderNet(args).to(device)
 renderer.apply(renderer_init)
 
-criterion = nn.BCELoss()
-
 
 def DOMLoss(x, y):
     return torch.mean(torch.square(torch.log(x) - torch.log(y)))
 
+
+criterion = nn.BCELoss()
 
 l2 = nn.MSELoss(reduction='sum')
 
@@ -178,8 +177,6 @@ def main():
                 img = np.expand_dims(render.render_canonical(fake_voxels[ex, 0], True), axis=(0, 1))
                 ots_results.append(img)
             ots = torch.tensor(np.vstack(ots_results), dtype=torch.float).to(device) / 255
-            cv2.imwrite(f'testing/nr_{epoch}_{i}.jpg', nr.detach().cpu()[0, 0].numpy() * 255)
-            cv2.imwrite(f'testing/ots_{epoch}_{i}.jpg', ots.detach().cpu()[0, 0].numpy() * 255)
             # Perform a forward pass of neural renderer output through D
             nr_output = discriminator(nr).view(-1)
             # Perform a forward pass of off-the-shelf renderer output through D

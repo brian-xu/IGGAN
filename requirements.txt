@@ -1,9 +1,8 @@
 numpy==1.19.3
 pyrender==0.1.39
-opencv-python
+trimesh~=3.8.19
+matplotlib~=3.3.3
 -f https://download.pytorch.org/whl/torch_stable.html
 torch==1.7.1
--f https://download.pytorch.org/whl/torch_stable.html
 torchvision==0.8.2
--f https://download.pytorch.org/whl/torch_stable.html
 torchaudio==0.7.2

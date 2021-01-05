@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.datasets as dset
-import cv2
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 
 class Voxels(object):
@@ -99,7 +100,7 @@ args = parser.parse_args()
 device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 
 batch_size = 1
-num_epochs = 10
+num_epochs = 5
 workers = 2
 nr_lr = 2e-5
 beta1 = 0.5
@@ -109,10 +110,11 @@ def data_loader(file_path):
     with open(file_path, 'rb') as f:
         voxels = read_as_3d_array(f)
     fake_voxels = torch.zeros(1, 64, 64, 64)
+    chair = np.rot90(voxels.data, 3, (0, 2))
     for a in range(voxels.dims[0]):
         for b in range(voxels.dims[1]):
             for c in range(voxels.dims[2]):
-                if voxels.data[a, b, c]:
+                if chair.data[a, b, c]:
                     fake_voxels[0, a, b, c] = 1
     return fake_voxels
 
@@ -137,6 +139,8 @@ criterion = nn.BCELoss()
 l2 = nn.MSELoss(reduction='sum')
 
 optimizerR = optim.Adam(renderer.parameters(), lr=nr_lr, betas=(beta1, 0.999))
+
+img_list = []
 
 
 def main():
@@ -164,10 +168,16 @@ def main():
             # Output training stats
             if i % 50 == 0:
                 print(f"[{epoch}/{num_epochs}][{i}/{len(dataloader)}]\t Loss_R: {errR.item():.4f}\t")
-            if i % 100 == 0:
-                cv2.imwrite(f'testing/nr_{epoch}_{i}.jpg', nr.detach().cpu()[0, 0].numpy() * 255)
+            if i % 200 == 0:
+                img_list.append(nr.detach().cpu()[0, 0].numpy() * 255)
 
 
 if __name__ == '__main__':
     main()
     torch.save(renderer.state_dict(), 'nr.pt')
+    # import matplotlib; matplotlib.use("TkAgg")  # uncomment if using PyCharm
+    fig, ax = plt.subplots()
+    plt.axis("off")
+    ims = [[plt.imshow(i, cmap='gray', animated=True)] for i in img_list]
+    ani = animation.ArtistAnimation(fig, ims, interval=500, repeat_delay=1000, blit=True)
+    plt.show()
