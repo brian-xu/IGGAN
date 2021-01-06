@@ -21,3 +21,5 @@ SpectralNorm code taken from
 
 Discriminator architecture based on the
 [PyTorch example DCGAN](https://github.com/pytorch/tutorials/blob/master/beginner_source/dcgan_faces_tutorial.py).
+
+Binvox handling taken from [binvox-rw-py](https://github.com/dimatura/binvox-rw-py/blob/public/binvox_rw.py).

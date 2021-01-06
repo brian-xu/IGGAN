@@ -1,6 +1,5 @@
 import argparse
 import random
-import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -172,11 +171,7 @@ def main():
             # Render the voxels with the neural renderer
             nr = renderer(fake_voxels)
             # Render the voxels with an off-the-shelf renderer
-            ots_results = []
-            for ex in range(fake_voxels.shape[0]):
-                img = np.expand_dims(render.render_canonical(fake_voxels[ex, 0], True), axis=(0, 1))
-                ots_results.append(img)
-            ots = torch.tensor(np.vstack(ots_results), dtype=torch.float).to(device) / 255
+            ots = render.render_tensor(fake_voxels, device)
             # Perform a forward pass of neural renderer output through D
             nr_output = discriminator(nr).view(-1)
             # Perform a forward pass of off-the-shelf renderer output through D
@@ -191,6 +186,7 @@ def main():
             R_x = nr_output.mean().item()
             # Update R
             optimizerR.step()
+            del ots
 
             # Output training stats
             if i % 50 == 0:
