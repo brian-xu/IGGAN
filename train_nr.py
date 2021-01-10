@@ -88,7 +88,6 @@ def main():
                 print(f"[{epoch}/{num_epochs}][{i}/{len(dataloader)}]\t Loss_R: {errR.item():.4f}\t")
             if i % 200 == 0:
                 img_list.append(nr.detach().cpu()[0, 0].numpy() * 255)
-            print(torch.cuda.memory_allocated(), torch.cuda.max_memory_allocated())
 
 
 if __name__ == '__main__':
