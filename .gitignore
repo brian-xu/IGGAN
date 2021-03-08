@@ -77,6 +77,8 @@ gen
 
 ### Project specific
 testing
+data/chair_images
+data/chair_models
 *.zip
 *.binvox
 *.exe

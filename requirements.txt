@@ -1,4 +1,3 @@
-numpy==1.19.3
 pyrender==0.1.39
 trimesh~=3.8.19
 matplotlib~=3.3.3

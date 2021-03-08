@@ -52,7 +52,8 @@ def renderer_init(m):
 
 
 renderer = model.RenderNet(args).to(device)
-renderer.apply(renderer_init)
+# renderer.apply(renderer_init)
+renderer.load_state_dict(torch.load('nr.pt'))
 
 criterion = nn.BCELoss()
 
