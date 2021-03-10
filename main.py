@@ -205,3 +205,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+    torch.save(generator.state_dict(), 'weights/gen.pt')
+    torch.save(renderer.state_dict(), 'weights/nr.pt')
+    torch.save(discriminator.state_dict(), 'weights/dis.pt')

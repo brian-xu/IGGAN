@@ -1,4 +1,3 @@
-import numpy as np
 import render
 import model
 import argparse
@@ -8,6 +7,7 @@ import torch.optim as optim
 import torchvision.datasets as dset
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from utils import data_loader
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default="data/")
@@ -25,20 +25,6 @@ workers = 2
 nr_lr = 2e-5
 beta1 = 0.5
 
-
-def data_loader(file_path):
-    with open(file_path, 'rb') as f:
-        voxels = render.read_as_3d_array(f)
-    fake_voxels = torch.zeros(1, 64, 64, 64)
-    chair = np.rot90(voxels.data, 3, (0, 2))
-    for a in range(voxels.dims[0]):
-        for b in range(voxels.dims[1]):
-            for c in range(voxels.dims[2]):
-                if chair.data[a, b, c]:
-                    fake_voxels[0, a, b, c] = 1
-    return fake_voxels
-
-
 dataset = dset.DatasetFolder(root=args.dataset, loader=data_loader, extensions=('.binvox',))
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
@@ -52,8 +38,8 @@ def renderer_init(m):
 
 
 renderer = model.RenderNet(args).to(device)
-# renderer.apply(renderer_init)
-renderer.load_state_dict(torch.load('nr.pt'))
+renderer.apply(renderer_init)
+# renderer.load_state_dict(torch.load('weights/nr.pt'))
 
 criterion = nn.BCELoss()
 
@@ -93,7 +79,7 @@ def main():
 
 if __name__ == '__main__':
     main()
-    torch.save(renderer.state_dict(), 'nr.pt')
+    torch.save(renderer.state_dict(), 'weights/nr.pt')
     # import matplotlib; matplotlib.use("TkAgg")  # uncomment if using PyCharm
     fig, ax = plt.subplots()
     plt.axis("off")
