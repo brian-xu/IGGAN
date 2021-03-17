@@ -1,19 +1,15 @@
 import render
 import model
-import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.datasets as dset
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from utils import data_loader
+import utils
+import os
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', type=str, default="data/")
-parser.add_argument('--bias', type=bool, default=True)
-parser.add_argument('--dropout_rate', type=float, default=0.25)
-parser.add_argument('--is_grayscale', type=bool, default=True)
+parser = utils.gen_parser()
 
 args = parser.parse_args()
 
@@ -25,7 +21,7 @@ workers = 2
 nr_lr = 2e-5
 beta1 = 0.5
 
-dataset = dset.DatasetFolder(root=args.dataset, loader=data_loader, extensions=('.binvox',))
+dataset = dset.DatasetFolder(root=args.dataset, loader=utils.data_loader, extensions=('.binvox',))
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                          shuffle=True, num_workers=workers)
@@ -38,8 +34,10 @@ def renderer_init(m):
 
 
 renderer = model.RenderNet(args).to(device)
-renderer.apply(renderer_init)
-# renderer.load_state_dict(torch.load('weights/nr.pt'))
+if os.path.exists("weights/nr.pt"):
+    renderer.load_state_dict(torch.load('weights/nr.pt'))
+else:
+    renderer.apply(renderer_init)
 
 criterion = nn.BCELoss()
 

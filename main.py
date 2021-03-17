@@ -1,4 +1,3 @@
-import argparse
 import random
 import torch
 import torch.optim as optim
@@ -6,27 +5,17 @@ import torch.nn as nn
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import model
+import utils
+import render
+import os
+import gc
 
 # Set random seed for reproducibility
-import render
-
 manualSeed = 999
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', type=str, default="data/")
-parser.add_argument('--batch_size', type=int, default=1)
-parser.add_argument('--num_epochs', type=int, default=5)
-parser.add_argument('--workers', type=int, default=2)
-parser.add_argument('--nr_lr', type=float, default=2e-5)
-parser.add_argument('--gan_lr', type=float, default=2e-4)
-parser.add_argument('--beta1', type=float, default=0.5)
-parser.add_argument('--dom_lambda', type=float, default=100)
-parser.add_argument('--z_size', type=float, default=200)
-parser.add_argument('--bias', type=bool, default=True)
-parser.add_argument('--dropout_rate', type=float, default=0.25)
-parser.add_argument('--is_grayscale', type=bool, default=True)
+parser = utils.gen_parser()
 
 args = parser.parse_args()
 
@@ -72,13 +61,22 @@ def renderer_init(m):
 
 
 generator = model.Generator(args).to(device)
-generator.apply(generator_init)
+if os.path.exists('weights/gen.pt'):
+    generator.load_state_dict(torch.load('weights/gen.pt'))
+else:
+    generator.apply(generator_init)
 
 discriminator = model.Discriminator(args).to(device)
-discriminator.apply(discriminator_init)
+if os.path.exists('weights/dis.pt'):
+    discriminator.load_state_dict(torch.load('weights/dis.pt'))
+else:
+    discriminator.apply(discriminator_init)
 
 renderer = model.RenderNet(args).to(device)
-renderer.apply(renderer_init)
+if os.path.exists('weights/nr.pt'):
+    renderer.load_state_dict(torch.load('weights/nr.pt'))
+else:
+    renderer.apply(renderer_init)
 
 
 def DOMLoss(x, y):
@@ -126,6 +124,9 @@ def main():
             # Calculate gradients for D in backward pass
             errD_real.backward()
             D_x = output.mean().item()
+            del real_cpu, output
+            gc.collect()
+            torch.cuda.empty_cache()
 
             # Train with all-fake batch
             # Generate batch of latent vectors
@@ -146,6 +147,9 @@ def main():
             errD = errD_real + errD_fake
             # Update D
             optimizerD.step()
+            del errD_real, errD_fake, fake_voxels, output
+            gc.collect()
+            torch.cuda.empty_cache()
 
             ############################
             # (2) Update G network: maximize log(D(G(z)))
@@ -161,6 +165,16 @@ def main():
             D_G_z2 = output.mean().item()
             # Update G
             optimizerG.step()
+
+            # Output generator/discriminator training stats
+            if i % 50 == 0:
+                print(f"[{epoch}/{args.num_epochs}][{i}/{len(dataloader)}]\t"
+                      f"Loss_D: {errD.item():.4f}\tLoss_G: {errG.item():.4f}\t"
+                      f"D(x):  {D_x:.4f}\tD(G(z)):  {D_G_z1:.4f}/ {D_G_z2:.4f}\t")
+
+            del fake, output, label, errD, errG, D_x, D_G_z1, D_G_z2
+            gc.collect()
+            torch.cuda.empty_cache()
 
             ############################
             # (3) Update R network: minimize l2(R) + lambda * DOM(R)
@@ -181,18 +195,23 @@ def main():
             # Calculate R's DOM loss based on squared log error of discriminator output
             errDOM = DOMLoss(ots_output, nr_output)
             errR = errL2 + args.dom_lambda * errDOM
+            R_x = nr_output.mean().item()
+            del noise, ots, ots_output, errL2, errDOM, nr, nr_output, fake_voxels
+            gc.collect()
+            torch.cuda.empty_cache()
             # Calculate gradients for R
             errR.backward()
-            R_x = nr_output.mean().item()
             # Update R
             optimizerR.step()
-            del ots
 
-            # Output training stats
+            # Output renderer training stats separately
             if i % 50 == 0:
                 print(f"[{epoch}/{args.num_epochs}][{i}/{len(dataloader)}]\t"
-                      f"Loss_D: {errD.item():.4f}\tLoss_G: {errG.item():.4f}\tLoss_R: {errR.item():.4f}\t"
-                      f"D(x):  {D_x:.4f}\tD(G(z)):  {D_G_z1:.4f}/ {D_G_z2:.4f}\tR(G(z):  {R_x:.4f}")
+                      f"Loss_R: {errR.item():.4f}\tR(G(z)):  {R_x:.4f}")
+
+            del errR, R_x
+            gc.collect()
+            torch.cuda.empty_cache()
 
             # # Save Losses for plotting later
             # G_losses.append(errG.item())

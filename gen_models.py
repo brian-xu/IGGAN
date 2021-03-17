@@ -5,12 +5,9 @@ import os
 import numpy as np
 import binvox_rw
 import datetime
+import utils
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--z_size', type=float, default=200)
-parser.add_argument('--bias', type=bool, default=True)
-parser.add_argument('--models', type=int, default=5)
-
+parser = utils.gen_parser()
 args = parser.parse_args()
 
 device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
