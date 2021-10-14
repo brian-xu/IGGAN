@@ -15,7 +15,7 @@ def mesh_colors():
 sm = trimesh.creation.box((1, 1, 1))
 sm.visual.face_colors = mesh_colors()
 
-camera = pyrender.OrthographicCamera(xmag=45, ymag=45, zfar=1000)
+camera = pyrender.OrthographicCamera(xmag=50, ymag=50, zfar=1000)
 camera_pose = np.array([
     [-6.43333333e-01, +3.83333333e-01, -6.66666666e-01, -2.33333333e+01],
     [+0.00000000e+00, +8.66666666e-01, +5.00000000e-01, +7.25000000e+01],

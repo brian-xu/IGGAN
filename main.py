@@ -11,9 +11,9 @@ import os
 import gc
 
 # Set random seed for reproducibility
-manualSeed = 999
-random.seed(manualSeed)
-torch.manual_seed(manualSeed)
+# manualSeed = 999
+# random.seed(manualSeed)
+# torch.manual_seed(manualSeed)
 
 parser = utils.gen_parser()
 
@@ -80,7 +80,7 @@ else:
 
 
 def DOMLoss(x, y):
-    return torch.mean(torch.square(torch.log(x) - torch.log(y)))
+    return torch.square(torch.log(x) - torch.log(y))
 
 
 criterion = nn.BCELoss()
@@ -116,50 +116,45 @@ def main():
             # Format batch
             real_cpu = data[0].to(device)
             b_size = real_cpu.size(0)
-            label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
+            real_labels = torch.full((b_size,), real_label, dtype=torch.float, device=device)
             # Forward pass real batch through D
             output = discriminator(real_cpu).view(-1)
             # Calculate loss on all-real batch
-            errD_real = criterion(output, label)
-            # Calculate gradients for D in backward pass
-            errD_real.backward()
+            errD_real = criterion(output, real_labels)
+            # Calculate D's loss on the all-real batch
             D_x = output.mean().item()
-            del real_cpu, output
-            gc.collect()
-            torch.cuda.empty_cache()
 
             # Train with all-fake batch
             # Generate batch of latent vectors
-            noise = torch.randn(b_size, args.z_size, 1, 1, device=device)
+            noise = torch.ones([b_size, args.z_size, 1, 1], device=device).normal_(0, 0.33)
             # Generate fake voxels batch with G
             fake_voxels = generator(noise)
-            # Render fake voxel batch with R
-            fake = renderer(fake_voxels)
-            label.fill_(fake_label)
+            # Render fake voxel batch with off-the-shelf renderer
+            fake = render.render_tensor(fake_voxels, device)
+            fake_labels = torch.full((b_size,), fake_label, dtype=torch.float, device=device)
             # Classify all fake batch with D
-            output = discriminator(fake.detach()).view(-1)
+            output = discriminator(fake).view(-1)
             # Calculate D's loss on the all-fake batch
-            errD_fake = criterion(output, label)
+            errD_fake = criterion(output, fake_labels)
             # Calculate the gradients for this batch
-            errD_fake.backward()
             D_G_z1 = output.mean().item()
             # Add the gradients from the all-real and all-fake batches
             errD = errD_real + errD_fake
+            # Only update discriminator if it has less than 80% accuracy
+            if (D_x + (1-D_G_z1)) / 2 < 0.8:
+                errD.backward()
             # Update D
             optimizerD.step()
-            del errD_real, errD_fake, fake_voxels, output
-            gc.collect()
-            torch.cuda.empty_cache()
 
             ############################
             # (2) Update G network: maximize log(D(G(z)))
             ###########################
             generator.zero_grad()
-            label.fill_(real_label)  # fake labels are real for generator cost
+            fake = renderer(fake_voxels)
             # Since we just updated D, perform another forward pass of all-fake batch through D
             output = discriminator(fake).view(-1)
             # Calculate G's loss based on this output
-            errG = criterion(output, label)
+            errG = criterion(output, real_labels)
             # Calculate gradients for G
             errG.backward()
             D_G_z2 = output.mean().item()
@@ -172,15 +167,12 @@ def main():
                       f"Loss_D: {errD.item():.4f}\tLoss_G: {errG.item():.4f}\t"
                       f"D(x):  {D_x:.4f}\tD(G(z)):  {D_G_z1:.4f}/ {D_G_z2:.4f}\t")
 
-            del fake, output, label, errD, errG, D_x, D_G_z1, D_G_z2
-            gc.collect()
-            torch.cuda.empty_cache()
-
             ############################
             # (3) Update R network: minimize l2(R) + lambda * DOM(R)
             ###########################
             renderer.zero_grad()
             # Since we just updated G, generate a new fake batch
+            noise = torch.randn(b_size, args.z_size, 1, 1, device=device)
             fake_voxels = generator(noise)
             # Render the voxels with the neural renderer
             nr = renderer(fake_voxels)
@@ -196,9 +188,6 @@ def main():
             errDOM = DOMLoss(ots_output, nr_output)
             errR = errL2 + args.dom_lambda * errDOM
             R_x = nr_output.mean().item()
-            del noise, ots, ots_output, errL2, errDOM, nr, nr_output, fake_voxels
-            gc.collect()
-            torch.cuda.empty_cache()
             # Calculate gradients for R
             errR.backward()
             # Update R
@@ -208,10 +197,6 @@ def main():
             if i % 50 == 0:
                 print(f"[{epoch}/{args.num_epochs}][{i}/{len(dataloader)}]\t"
                       f"Loss_R: {errR.item():.4f}\tR(G(z)):  {R_x:.4f}")
-
-            del errR, R_x
-            gc.collect()
-            torch.cuda.empty_cache()
 
             # # Save Losses for plotting later
             # G_losses.append(errG.item())

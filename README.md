@@ -6,7 +6,7 @@ Under construction.
 
 ## Notes
 
-CUDA training requires about 6G of VRAM.
+CUDA training requires about 10G of VRAM.
 
 ## Credits
 

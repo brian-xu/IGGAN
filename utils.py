@@ -23,7 +23,7 @@ def gen_parser():
     parser.add_argument('--dataset', type=str, default="data/")
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_epochs', type=int, default=5)
-    parser.add_argument('--workers', type=int, default=2)
+    parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--nr_lr', type=float, default=2e-5)
     parser.add_argument('--gan_lr', type=float, default=2e-4)
     parser.add_argument('--beta1', type=float, default=0.5)

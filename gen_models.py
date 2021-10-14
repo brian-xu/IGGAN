@@ -1,4 +1,3 @@
-import argparse
 import torch
 import model
 import os
@@ -29,7 +28,7 @@ def main():
             noise = torch.randn(1, args.z_size, 1, 1, device=device)
             # Generate fake voxels batch with G
             fake_voxels = generator(noise)
-            voxels = np.array(fake_voxels.detach().cpu()[0, 0, :, :, :].numpy(), dtype=bool)
+            voxels = (fake_voxels.detach().cpu()[0, 0, :, :, :].numpy() > 0.2).astype(int)
             result = binvox_rw.Voxels(voxels, ref_vox.dims, ref_vox.translate, ref_vox.scale, ref_vox.axis_order)
             with open(f'{timestamp}_{i}.binvox', 'wb') as f:
                 binvox_rw.write(result, f)

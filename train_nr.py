@@ -15,16 +15,10 @@ args = parser.parse_args()
 
 device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 
-batch_size = 1
-num_epochs = 5
-workers = 2
-nr_lr = 2e-5
-beta1 = 0.5
-
 dataset = dset.DatasetFolder(root=args.dataset, loader=utils.data_loader, extensions=('.binvox',))
 # Create the dataloader
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                                         shuffle=True, num_workers=workers)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
+                                         shuffle=True, num_workers=args.workers)
 
 
 def renderer_init(m):
@@ -43,13 +37,13 @@ criterion = nn.BCELoss()
 
 l2 = nn.MSELoss(reduction='sum')
 
-optimizerR = optim.Adam(renderer.parameters(), lr=nr_lr, betas=(beta1, 0.999))
+optimizerR = optim.Adam(renderer.parameters(), lr=args.nr_lr, betas=(args.beta1, 0.999))
 
 img_list = []
 
 
 def main():
-    for epoch in range(num_epochs):
+    for epoch in range(args.num_epochs):
         for i, data in enumerate(dataloader):
             ############################
             # (1) Update R network: minimize l2(R)
@@ -70,7 +64,7 @@ def main():
 
             # Output training stats
             if i % 50 == 0:
-                print(f"[{epoch}/{num_epochs}][{i}/{len(dataloader)}]\t Loss_R: {errR.item():.4f}\t")
+                print(f"[{epoch}/{args.num_epochs}][{i}/{len(dataloader)}]\t Loss_R: {errR.item():.4f}\t")
             if i % 200 == 0:
                 img_list.append(nr.detach().cpu()[0, 0].numpy() * 255)
 
@@ -78,7 +72,7 @@ def main():
 if __name__ == '__main__':
     main()
     torch.save(renderer.state_dict(), 'weights/nr.pt')
-    # import matplotlib; matplotlib.use("TkAgg")  # uncomment if using PyCharm
+    import matplotlib; matplotlib.use("TkAgg")  # uncomment if using PyCharm
     fig, ax = plt.subplots()
     plt.axis("off")
     ims = [[plt.imshow(i, cmap='gray', animated=True)] for i in img_list]
