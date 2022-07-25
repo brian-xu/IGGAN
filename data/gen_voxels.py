@@ -32,7 +32,7 @@ if not os.path.exists("03001627.zip"):
 if not os.path.isdir('chair_models/'):
     os.mkdir('chair_models/')
 
-n_models = 1000  # number of models to extract
+n_models = 500  # number of models to extract
 
 chairs = "03001627.zip"
 with ZipFile(chairs, 'r') as zf:

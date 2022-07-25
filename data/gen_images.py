@@ -18,11 +18,11 @@ def main():
     for i, data in enumerate(dataloader):
         voxels = data[0].to(device)
         ots = render.render_tensor(voxels, device)
-        cv2.imwrite(f"chair_images/chair_{i}.png", ots.detach().cpu()[0, 0].numpy() * 255)
+        cv2.imwrite(f"../chair_images/chair_{i}.png", ots.detach().cpu()[0, 0].numpy() * 255)
 
 
 if __name__ == '__main__':
     # make chair model directory
-    if not os.path.isdir('chair_images/'):
-        os.mkdir('chair_images/')
+    if not os.path.isdir('../chair_images/'):
+        os.mkdir('../chair_images/')
     main()
