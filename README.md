@@ -4,6 +4,12 @@ Unoffical code for the research paper [Inverse Graphics GAN](https://arxiv.org/p
 
 Under construction.
 
+## RenderNet
+
+Includes a PyTorch implementation of [RenderNet](https://github.com/thunguyenphuoc/RenderNet) as a necessary part of the architecture.
+
+https://github.com/brian-xu/IGGAN/assets/47406953/9b0e1295-ccbb-428a-a977-61247a044d5c
+
 ## Notes
 
 CUDA training requires about 10G of VRAM.
